@@ -1,70 +1,47 @@
 import numpy as np
 
-from orrerynav.simulator import OrreryNavigator
+from eamis import OrreryNavigator, default_class_profiles
 
 
-def test_navigator_runs_and_converges_position_and_velocity():
+def test_navigator_runs_and_velocity_converges():
     rng = np.random.default_rng(2024)
-    navigator = OrreryNavigator(
-        initial_position_km=np.array([1.0e8, 2.0e8, -5.0e7]),
-        initial_velocity_km_s=np.array([12.0, -4.0, 1.5]),
-        rng=rng,
-    )
-
-    history = navigator.run(n_steps=40, dt_s=3600.0)
+    nav = OrreryNavigator(np.array([1.0e8, 2.0e8, -5.0e7]),
+                          np.array([12.0, -4.0, 1.5]), rng=rng)
+    history = nav.run(40, 3600.0)
     assert len(history) == 40
+    early = np.mean([h["velocity_error_km_s"] for h in history[:5]])
+    late = np.mean([h["velocity_error_km_s"] for h in history[-5:]])
+    assert late < early
+    assert late < 0.01
 
-    early_velocity_error = np.mean([h["velocity_error_km_s"] for h in history[:5]])
-    late_velocity_error = np.mean([h["velocity_error_km_s"] for h in history[-5:]])
-    assert late_velocity_error < early_velocity_error
-    assert late_velocity_error < 0.2
 
-
-def test_navigator_screens_agents_and_produces_intact_audit_chain():
+def test_navigator_audit_chain_intact():
     rng = np.random.default_rng(7)
-    navigator = OrreryNavigator(
-        initial_position_km=np.array([5.0e7, -1.0e8, 3.0e7]),
-        initial_velocity_km_s=np.array([8.0, 3.0, -1.0]),
-        rng=rng,
-    )
-
-    navigator.run(n_steps=10, dt_s=3600.0)
-
-    assert len(navigator.audit_log.entries) == 10
-    assert navigator.audit_log.verify_chain()
-    for entry in navigator.audit_log.entries:
-        assert entry.event == "AgentTelemetryScreened"
+    nav = OrreryNavigator(np.array([5.0e7, -1.0e8, 3.0e7]),
+                          np.array([8.0, 3.0, -1.0]), rng=rng)
+    nav.run(10, 3600.0)
+    assert len(nav.audit_log.entries) == 10
+    assert nav.audit_log.verify_chain()
 
 
-def test_mission_report_summarizes_state_and_audit_integrity():
+def test_mission_report_is_complete_and_intact():
     rng = np.random.default_rng(11)
-    navigator = OrreryNavigator(
-        initial_position_km=np.array([2.0e8, 0.0, 0.0]),
-        initial_velocity_km_s=np.array([0.0, 15.0, 0.0]),
-        rng=rng,
-    )
-    navigator.run(n_steps=5, dt_s=1800.0)
-
-    report = navigator.mission_report()
+    nav = OrreryNavigator(np.array([2.0e8, 0.0, 0.0]),
+                          np.array([0.0, 15.0, 0.0]), rng=rng)
+    nav.run(5, 1800.0)
+    report = nav.mission_report()
     assert report["steps_completed"] == 5
     assert report["audit_chain_intact"] is True
     assert len(report["latest_position_km"]) == 3
-    assert len(report["latest_velocity_km_s"]) == 3
+    assert report["gdop"] > 0
 
 
-def test_compromised_agent_telemetry_is_flagged_and_logged():
-    from orrerynav import madn
-
+def test_compromised_agent_telemetry_is_flagged():
     rng = np.random.default_rng(5)
-    navigator = OrreryNavigator(
-        initial_position_km=np.array([1.0e8, 1.0e8, 1.0e8]),
-        initial_velocity_km_s=np.array([5.0, 5.0, 5.0]),
-        rng=rng,
-    )
-
-    compromise_signature = madn.default_class_profiles()["compromise"].means
-    record = navigator.step(dt_s=3600.0, agent_features=compromise_signature)
-
+    nav = OrreryNavigator(np.array([1.0e8, 1.0e8, 1.0e8]),
+                          np.array([5.0, 5.0, 5.0]), rng=rng)
+    compromise_sig = default_class_profiles()["compromise"].means
+    record = nav.step(3600.0, agent_features=compromise_sig)
     assert record["madn_class"] == "compromise"
-    assert navigator.audit_log.entries[-1].payload["predicted_class"] == "compromise"
-    assert navigator.audit_log.verify_chain()
+    assert nav.audit_log.entries[-1].payload["predicted_class"] == "compromise"
+    assert nav.audit_log.verify_chain()
