@@ -48,7 +48,7 @@ def planck_2018_velocity_vector() -> np.ndarray:
     return PLANCK_2018_SPEED_KM_S * direction
 
 
-def sky_sample_directions(n_samples: int = 12) -> np.ndarray:
+def sky_sample_directions(n_samples: int = 32) -> np.ndarray:
     """Returns unit vectors roughly evenly spread over the sky (Fibonacci
     sphere) at which to sample the CMB temperature."""
     indices = np.arange(n_samples)
@@ -97,7 +97,7 @@ def angular_error_deg(estimate: np.ndarray, truth: np.ndarray) -> float:
 def velocity_fix(
     true_velocity_km_s: np.ndarray,
     noise_kelvin: float = 50e-6,
-    n_samples: int = 12,
+    n_samples: int = 32,
     rng: np.random.Generator | None = None,
 ) -> dict:
     """End-to-end CMB dipole velocity fix: simulate sky samples for a known

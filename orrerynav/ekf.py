@@ -49,7 +49,7 @@ def process_noise(dt_s: float, accel_psd: float) -> np.ndarray:
 class FusedEKF:
     """6-state EKF fusing XNAV position and CMB-dipole velocity measurements."""
 
-    def __init__(self, initial_state: np.ndarray, initial_covariance: np.ndarray, accel_psd: float = 1e-12):
+    def __init__(self, initial_state: np.ndarray, initial_covariance: np.ndarray, accel_psd: float = 1e-13):
         self.state = np.asarray(initial_state, dtype=float).copy()
         self.covariance = np.asarray(initial_covariance, dtype=float).copy()
         self.accel_psd = accel_psd

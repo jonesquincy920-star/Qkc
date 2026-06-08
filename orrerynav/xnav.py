@@ -31,14 +31,20 @@ def radec_to_unit_vector(ra_hours: float, dec_deg: float) -> np.ndarray:
     ])
 
 
-# A small constellation of well-known millisecond pulsars (RA hours, Dec deg),
-# representative of ATNF catalog entries used for XNAV studies.
+# A nine-pulsar constellation of well-known millisecond pulsars (RA hours,
+# Dec deg), representative of ATNF catalog entries used for XNAV studies.
+# Spreading the constellation across both hemispheres and a range of right
+# ascensions lowers GDOP by avoiding near-degenerate observation geometry.
 PULSAR_CATALOG = {
+    "J0030+0451": (0.509, 4.861),
     "J0437-4715": (4.616, -47.253),
     "J0613-0200": (6.220, -2.007),
+    "J0751+1807": (7.858, 18.123),
     "J1024-0719": (10.408, -7.327),
     "J1744-1134": (17.741, -11.574),
+    "J1909-3744": (19.157, -37.744),
     "J2124-3358": (21.408, -33.967),
+    "J2241-5236": (22.690, -52.610),
 }
 
 

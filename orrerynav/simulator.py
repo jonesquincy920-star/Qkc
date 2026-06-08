@@ -38,7 +38,7 @@ class OrreryNavigator:
 
         initial_state = np.concatenate([self.true_position_km, self.true_velocity_km_s])
         initial_covariance = np.diag([1e8, 1e8, 1e8, 1.0, 1.0, 1.0])
-        self.ekf = FusedEKF(initial_state, initial_covariance, accel_psd=1e-12)
+        self.ekf = FusedEKF(initial_state, initial_covariance, accel_psd=1e-13)
 
         self.madn_profiles = madn.default_class_profiles()
         self.audit_log = madn.HMACAuditLog(key=audit_key)
