@@ -54,9 +54,9 @@ channel / data exfiltration / compromise) using:
 ```bash
 pip install numpy pytest
 python eamis.py                  # integrated 40-step cruise demo
-python eamis.py --selftest       # 27 embedded regression tests
+python eamis.py --selftest       # 30 embedded regression tests
 python eamis.py --validate       # reproducible validated-results report
-pytest tests/ -q                 # 46 pytest tests (red-team sweep included)
+pytest tests/ -q                 # 50 pytest tests (red-team sweep included)
 ```
 
 ---

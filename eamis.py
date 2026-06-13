@@ -853,6 +853,36 @@ def _run_selftests(verbose: bool = True) -> int:
     check("false_reject_rate_low", false_rejects / 200 < 0.10,
           f"rate={false_rejects/200:.2%}")
 
+    # behavioral_drift's profile mean is the closest of the six threat
+    # classes to nominal's, making it the highest-risk class for false
+    # positives if telemetry noise grows beyond the calibrated 0.15 std.
+    # These checks lock in that margin so a future profile tweak can't
+    # silently erode it.
+    nominal_mean = profiles["nominal"].means
+    drift_margin = float(np.linalg.norm(profiles["behavioral_drift"].means - nominal_mean))
+    other_margins = [float(np.linalg.norm(profiles[c].means - nominal_mean))
+                     for c in threat_classes if c != "behavioral_drift"]
+    check("drift_is_nearest_threat_to_nominal", drift_margin < min(other_margins),
+          f"drift_margin={drift_margin:.3f}, nearest_other={min(other_margins):.3f}")
+    check("drift_margin_safe_at_calibrated_noise", drift_margin / 0.15 > 5.0,
+          f"margin/noise_std={drift_margin / 0.15:.1f}")
+
+    drift_fp_calibrated = sum(
+        max(classify(nominal_mean + rng.normal(0.0, 0.15, size=_N_FEATURES), profiles
+                      ).items(), key=lambda kv: kv[1])[0] == "behavioral_drift"
+        for _ in range(1000)
+    )
+    check("drift_false_positives_zero_at_calibrated_noise", drift_fp_calibrated == 0,
+          f"{drift_fp_calibrated}/1000")
+
+    drift_fp_stress = sum(
+        max(classify(nominal_mean + rng.normal(0.0, 0.75, size=_N_FEATURES), profiles
+                      ).items(), key=lambda kv: kv[1])[0] == "behavioral_drift"
+        for _ in range(1000)
+    )
+    check("drift_false_positive_rate_bounded_under_stress", drift_fp_stress / 1000 < 0.05,
+          f"rate={drift_fp_stress/1000:.2%} @ noise_std=0.75")
+
     # -- Audit log -----------------------------------------------------------
     if verbose:
         print("\n[HMACAuditLog]")
